@@ -4,7 +4,7 @@ The homepage SHALL be built via static export and deployed to a Cloudflare Pages
 
 #### Scenario: Main branch deployment
 - **WHEN** code is pushed to the main branch of `Frexida/homepage`
-- **THEN** the workflow runs `npm ci && npm run export` to `./out` and deploys to Cloudflare Pages project `frexida-homepage`
+- **THEN** the workflow installs dependencies (currently `npm install`, switch to `npm ci` when lockfile exists), runs `npm run build` (with `output: 'export'` producing `./out`), and deploys to Cloudflare Pages project `frexida-homepage`
 
 ### Requirement: Custom domain mapping
 The homepage SHALL be served at `www.frexida.com` via Cloudflare Pages with TLS enabled.

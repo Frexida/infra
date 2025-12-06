@@ -36,7 +36,6 @@ jobs:
           repository: ${{ inputs.infra_repository }}
           ref: ${{ inputs.infra_ref }}
           path: infra
-          token: ${{ inputs.repo_token }}
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4

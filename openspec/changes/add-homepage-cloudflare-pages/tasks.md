@@ -1,6 +1,6 @@
 ## 1. Build & project settings
 - [x] 1.1 Confirm Cloudflare Pages project name `frexida-homepage` and custom domain `www.frexida.com`.
-- [x] 1.2 Ensure build uses `npm ci && npm run export` to `./out`.
+- [x] 1.2 Ensure build uses `npm install && npm run build` (with `output: 'export'` producing `./out`; switch to `npm ci` once lockfile is added).
 
 ## 2. Deployment workflow
 - [x] 2.1 Add GitHub Actions workflow in `Frexida/homepage` to build/export and run `wrangler pages deploy ./out --project-name frexida-homepage`.
