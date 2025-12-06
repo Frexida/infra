@@ -1,0 +1,13 @@
+name: Deploy via Infra Template (Sample)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    uses: Frexida/infra/.github/workflows/terraform-template.yml@main
+    with:
+      role_arn: arn:aws:iam::<ACCOUNT_ID>:role/TerraformExecutionRole
+      aws_region: ap-northeast-1

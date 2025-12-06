@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowBroadTerraformActions",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:*",
+        "iam:*",
+        "s3:*",
+        "dynamodb:*",
+        "cloudwatch:*",
+        "logs:*",
+        "sts:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
