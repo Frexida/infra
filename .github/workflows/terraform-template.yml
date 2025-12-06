@@ -21,6 +21,9 @@ jobs:
     steps:
       - name: Checkout infra repo
         uses: actions/checkout@v4
+        with:
+          repository: Frexida/infra
+          path: infra
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -33,12 +36,12 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        working-directory: ./terraform
+        working-directory: ./infra/terraform
 
       - name: Terraform Plan
         run: terraform plan -input=false
-        working-directory: ./terraform
+        working-directory: ./infra/terraform
 
       - name: Terraform Apply
         run: terraform apply -input=false -auto-approve
-        working-directory: ./terraform
+        working-directory: ./infra/terraform
