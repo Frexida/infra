@@ -1,0 +1,246 @@
+name: Deploy Project Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'projects/**'
+      - 'modules/**'
+      - '.github/workflows/project-deploy.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'projects/**'
+      - 'modules/**'
+      - '.github/workflows/project-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      project:
+        description: 'Project to deploy'
+        required: true
+        type: choice
+        options:
+          - picture-calendar
+          - homepage
+          - app-foobar
+          - all
+      environment:
+        description: 'Environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+
+permissions:
+  id-token: write  # Required for OIDC
+  contents: read
+  pull-requests: write
+
+env:
+  AWS_REGION: ap-northeast-1
+  TF_VERSION: 1.5.7
+
+jobs:
+  detect-changes:
+    name: Detect Project Changes
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.detect.outputs.projects }}
+      matrix: ${{ steps.detect.outputs.matrix }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed projects
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            if [ "${{ github.event.inputs.project }}" == "all" ]; then
+              projects='["picture-calendar", "homepage", "app-foobar"]'
+            else
+              projects='["${{ github.event.inputs.project }}"]'
+            fi
+          else
+            # Detect which projects have changes
+            changed_files=$(git diff --name-only HEAD^ HEAD)
+            projects='[]'
+
+            if echo "$changed_files" | grep -q "projects/picture-calendar/"; then
+              projects=$(echo $projects | jq '. += ["picture-calendar"]')
+            fi
+            if echo "$changed_files" | grep -q "projects/homepage/"; then
+              projects=$(echo $projects | jq '. += ["homepage"]')
+            fi
+            if echo "$changed_files" | grep -q "projects/app-foobar/"; then
+              projects=$(echo $projects | jq '. += ["app-foobar"]')
+            fi
+
+            # If modules changed, deploy all projects
+            if echo "$changed_files" | grep -q "modules/"; then
+              projects='["picture-calendar", "homepage", "app-foobar"]'
+            fi
+          fi
+
+          echo "projects=$projects" >> $GITHUB_OUTPUT
+          echo "matrix={\"project\":$projects}" >> $GITHUB_OUTPUT
+          echo "Projects to deploy: $projects"
+
+  terraform-plan:
+    name: Plan ${{ matrix.project }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.projects != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive
+        working-directory: ./projects/${{ matrix.project }}/terraform
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        working-directory: ./projects/${{ matrix.project }}/terraform
+
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+        working-directory: ./projects/${{ matrix.project }}/terraform
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan -detailed-exitcode -no-color -out=tfplan \
+            -var="github_token=${{ secrets.GH_PAT }}" \
+            -var="ai_agent_endpoint=${{ vars.AI_AGENT_ENDPOINT }}" \
+            -var="ai_agent_api_key=${{ secrets.AI_AGENT_API_KEY }}"
+        working-directory: ./projects/${{ matrix.project }}/terraform
+        continue-on-error: true
+
+      - name: Upload Plan
+        if: steps.plan.outputs.exitcode == '2'
+        uses: actions/upload-artifact@v3
+        with:
+          name: tfplan-${{ matrix.project }}
+          path: ./projects/${{ matrix.project }}/terraform/tfplan
+
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          PLAN: "${{ steps.plan.outputs.stdout }}"
+          PROJECT: "${{ matrix.project }}"
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Project: ${process.env.PROJECT} 🏗️
+            #### Terraform Format and Style 🖌 \`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️ \`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖 \`${{ steps.validate.outcome }}\`
+            #### Terraform Plan 📋 \`${{ steps.plan.outcome }}\`
+
+            <details><summary>Show Plan for ${process.env.PROJECT}</summary>
+
+            \`\`\`terraform
+            ${process.env.PLAN}
+            \`\`\`
+
+            </details>`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+  terraform-apply:
+    name: Apply ${{ matrix.project }}
+    needs: [detect-changes, terraform-plan]
+    if: |
+      github.ref == 'refs/heads/main' &&
+      github.event_name != 'pull_request' &&
+      needs.detect-changes.outputs.projects != '[]'
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./projects/${{ matrix.project }}/terraform
+
+      - name: Download Plan
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan-${{ matrix.project }}
+          path: ./projects/${{ matrix.project }}/terraform
+
+      - name: Terraform Apply
+        run: |
+          terraform apply -auto-approve -input=false tfplan
+        working-directory: ./projects/${{ matrix.project }}/terraform
+
+      - name: Get Outputs
+        id: outputs
+        run: |
+          echo "webhook_url=$(terraform output -raw webhook_url 2>/dev/null || echo '')" >> $GITHUB_OUTPUT
+          echo "codebuild_project=$(terraform output -raw codebuild_project_name 2>/dev/null || echo '')" >> $GITHUB_OUTPUT
+          echo "dashboard_url=$(terraform output -raw cloudwatch_dashboard_url 2>/dev/null || echo '')" >> $GITHUB_OUTPUT
+        working-directory: ./projects/${{ matrix.project }}/terraform
+
+      - name: Summary
+        run: |
+          echo "### Project ${{ matrix.project }} Deployed Successfully! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Resources Created:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **CodeBuild Project**: ${{ steps.outputs.outputs.codebuild_project }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dashboard**: ${{ steps.outputs.outputs.dashboard_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Add webhook URL to GitHub repository settings" >> $GITHUB_STEP_SUMMARY
+          echo "2. Ensure buildspec.yml exists in the project repository" >> $GITHUB_STEP_SUMMARY
+          echo "3. Monitor builds in CloudWatch dashboard" >> $GITHUB_STEP_SUMMARY
