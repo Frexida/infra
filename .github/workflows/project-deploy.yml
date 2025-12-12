@@ -68,24 +68,57 @@ jobs:
             else
               projects='["${{ github.event.inputs.project }}"]'
             fi
-          else
-            # Detect which projects have changes
-            changed_files=$(git diff --name-only HEAD^ HEAD)
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            # For PRs, check changed files against base branch
+            changed_files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD 2>/dev/null || echo "")
             projects='[]'
 
+            # Build projects array manually without jq
+            project_list=""
+
             if echo "$changed_files" | grep -q "projects/picture-calendar/"; then
-              projects=$(echo $projects | jq '. += ["picture-calendar"]')
+              [ -z "$project_list" ] && project_list='"picture-calendar"' || project_list="$project_list,\"picture-calendar\""
             fi
             if echo "$changed_files" | grep -q "projects/homepage/"; then
-              projects=$(echo $projects | jq '. += ["homepage"]')
+              [ -z "$project_list" ] && project_list='"homepage"' || project_list="$project_list,\"homepage\""
             fi
             if echo "$changed_files" | grep -q "projects/app-foobar/"; then
-              projects=$(echo $projects | jq '. += ["app-foobar"]')
+              [ -z "$project_list" ] && project_list='"app-foobar"' || project_list="$project_list,\"app-foobar\""
             fi
 
             # If modules changed, deploy all projects
             if echo "$changed_files" | grep -q "modules/"; then
               projects='["picture-calendar", "homepage", "app-foobar"]'
+            elif [ -n "$project_list" ]; then
+              projects="[$project_list]"
+            else
+              projects='[]'
+            fi
+          else
+            # For push events
+            changed_files=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+            projects='[]'
+
+            # Build projects array manually without jq
+            project_list=""
+
+            if echo "$changed_files" | grep -q "projects/picture-calendar/"; then
+              [ -z "$project_list" ] && project_list='"picture-calendar"' || project_list="$project_list,\"picture-calendar\""
+            fi
+            if echo "$changed_files" | grep -q "projects/homepage/"; then
+              [ -z "$project_list" ] && project_list='"homepage"' || project_list="$project_list,\"homepage\""
+            fi
+            if echo "$changed_files" | grep -q "projects/app-foobar/"; then
+              [ -z "$project_list" ] && project_list='"app-foobar"' || project_list="$project_list,\"app-foobar\""
+            fi
+
+            # If modules changed, deploy all projects
+            if echo "$changed_files" | grep -q "modules/"; then
+              projects='["picture-calendar", "homepage", "app-foobar"]'
+            elif [ -n "$project_list" ]; then
+              projects="[$project_list]"
+            else
+              projects='[]'
             fi
           fi
 
