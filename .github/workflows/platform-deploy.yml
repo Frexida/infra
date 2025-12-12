@@ -40,6 +40,7 @@ jobs:
   terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       exitcode: ${{ steps.plan.outputs.exitcode }}
 
@@ -79,7 +80,8 @@ jobs:
         run: |
           terraform plan -detailed-exitcode -no-color -out=tfplan \
             -var="github_token=${{ secrets.GH_PAT }}" \
-            -var="ai_agent_endpoint=${{ vars.AI_AGENT_ENDPOINT }}" \
+            -var="github_repository=https://github.com/Frexida/infra.git" \
+            -var="ai_agent_endpoint=${{ vars.AI_AGENT_ENDPOINT || 'https://api.frexida.com/ci-result' }}" \
             -var="ai_agent_api_key=${{ secrets.AI_AGENT_API_KEY }}"
         working-directory: ./platform/self-healing-cicd
         continue-on-error: true
@@ -152,7 +154,8 @@ jobs:
         run: |
           terraform apply -auto-approve -input=false \
             -var="github_token=${{ secrets.GH_PAT }}" \
-            -var="ai_agent_endpoint=${{ vars.AI_AGENT_ENDPOINT }}" \
+            -var="github_repository=https://github.com/Frexida/infra.git" \
+            -var="ai_agent_endpoint=${{ vars.AI_AGENT_ENDPOINT || 'https://api.frexida.com/ci-result' }}" \
             -var="ai_agent_api_key=${{ secrets.AI_AGENT_API_KEY }}"
         working-directory: ./platform/self-healing-cicd
 
