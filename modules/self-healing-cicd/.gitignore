@@ -1,0 +1,5 @@
+
+# Terraform provider files
+**/.terraform/
+**/.terraform.lock.hcl
+**/lambda-package.zip

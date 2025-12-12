@@ -1,0 +1,25 @@
+# Terraform変数の設定例
+# このファイルをコピーして terraform.tfvars として使用してください
+# cp terraform.tfvars.example terraform.tfvars
+
+# 環境設定
+environment = "production"
+aws_region  = "ap-northeast-1"
+
+# GitHub Personal Access Token (必須)
+# このトークンには以下の権限が必要です：
+# - repo (コードの読み取り、コミット、プッシュ)
+# 環境変数で設定: export TF_VAR_github_token="your-token"
+# または以下に直接記入（Gitにコミットしないよう注意）
+# github_token = "your-github-token"
+
+# AI Agent API設定
+# エラー情報を送信するエンドポイントURL
+# 例: https://your-ai-agent.com/ci_result
+ai_agent_endpoint = "https://your-ai-agent-api.com/ci_result"
+
+# オプション: API認証が必要な場合のみ設定
+# ai_agent_api_key = "your-optional-api-key"
+
+# オプション: GitHub Webhook検証用シークレット
+# github_webhook_secret = "your-webhook-secret"

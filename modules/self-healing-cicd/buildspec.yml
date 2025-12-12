@@ -1,0 +1,88 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+      python: 3.11
+    commands:
+      - echo "Installing dependencies..."
+      - |
+        if [ -f "package.json" ]; then
+          echo "Installing Node.js dependencies..."
+          npm ci --cache /root/.npm
+        fi
+      - |
+        if [ -f "requirements.txt" ]; then
+          echo "Installing Python dependencies..."
+          pip install --cache-dir /root/.cache/pip -r requirements.txt
+        fi
+
+  pre_build:
+    commands:
+      - echo "Running pre-build checks..."
+      - export COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - export BUILD_TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+      - export BUILD_ID=$CODEBUILD_BUILD_ID
+      - echo "Build ID: $BUILD_ID"
+      - echo "Commit: $COMMIT_HASH"
+      - echo "Retry count: ${RETRY_COUNT:-0}"
+
+  build:
+    commands:
+      - echo "Running build..."
+      - |
+        if [ -f "package.json" ]; then
+          npm run build || BUILD_FAILED=true
+        fi
+      - |
+        if [ -f "Makefile" ]; then
+          make build || BUILD_FAILED=true
+        fi
+      - |
+        if [ "$BUILD_FAILED" = "true" ]; then
+          echo "Build failed"
+          exit 1
+        fi
+
+  post_build:
+    commands:
+      - echo "Running tests..."
+      - |
+        if [ -f "package.json" ] && [ -z "$SKIP_TESTS" ]; then
+          npm test || TEST_FAILED=true
+        fi
+      - |
+        if [ -f "pytest.ini" ] || [ -f "setup.cfg" ] || [ -f "tests" ]; then
+          pytest || TEST_FAILED=true
+        fi
+      - |
+        if [ "$TEST_FAILED" = "true" ]; then
+          echo "Tests failed"
+          exit 1
+        fi
+      - echo "Build and tests completed successfully!"
+
+artifacts:
+  files:
+    - '**/*'
+  name: build-$BUILD_TIMESTAMP
+  exclude-paths:
+    - node_modules/**/*
+    - .git/**/*
+    - .venv/**/*
+    - __pycache__/**/*
+
+cache:
+  paths:
+    - '/root/.npm/**/*'
+    - '/root/.cache/**/*'
+    - 'node_modules/**/*'
+    - '.venv/**/*'
+
+reports:
+  test-results:
+    files:
+      - 'test-results/**/*'
+      - 'coverage/**/*'
+    file-format: 'JUNITXML'
