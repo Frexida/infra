@@ -82,7 +82,7 @@ module "self_healing_cicd" {
   # GitHub configuration
   github_repository = var.github_repository
   github_branch     = "main"
-  github_token      = var.github_token  # Set via environment variable
+  github_token      = var.github_token # Set via environment variable
   webhook_secret    = var.github_webhook_secret
 
   # AI Agent configuration
@@ -90,10 +90,10 @@ module "self_healing_cicd" {
   ai_agent_api_key  = var.ai_agent_api_key
 
   # Build configuration (optimized for cost)
-  build_compute_type = "BUILD_GENERAL1_SMALL"  # 2 vCPU, 3GB RAM
-  build_timeout      = 30                      # 30 minutes max
-  max_retry_count    = 3                       # Max 3 automatic retries
-  log_retention_days = 7                       # Keep logs for 7 days
+  build_compute_type = "BUILD_GENERAL1_SMALL" # 2 vCPU, 3GB RAM
+  build_timeout      = 30                     # 30 minutes max
+  max_retry_count    = 3                      # Max 3 automatic retries
+  log_retention_days = 7                      # Keep logs for 7 days
 }
 
 ###############################################################################
