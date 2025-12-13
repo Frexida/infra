@@ -139,12 +139,9 @@ resource "aws_cloudwatch_dashboard" "pipeline_monitoring" {
         type = "metric"
         properties = {
           metrics = [
-            ["SelfHealingPipeline", "RetryCount",
-            { stat = "Sum", label = "Total Retries" }],
-            [".", "AIAgentInvocations",
-            { stat = "Sum", label = "AI Agent Calls" }],
-            [".", "PatchSuccessRate",
-            { stat = "Average", label = "Patch Success Rate (%)" }]
+            ["SelfHealingPipeline", "RetryCount", { "stat" = "Sum", "label" = "Total Retries" }],
+            ["SelfHealingPipeline", "AIAgentInvocations", { "stat" = "Sum", "label" = "AI Agent Calls" }],
+            ["SelfHealingPipeline", "PatchSuccessRate", { "stat" = "Average", "label" = "Patch Success Rate (%)" }]
           ]
           view   = "singleValue"
           period = 86400 # 1 day
@@ -230,6 +227,7 @@ resource "aws_sns_topic_policy" "build_failure_policy" {
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "AllowEventBridgePublish"
         Effect = "Allow"
         Principal = {
           Service = "events.amazonaws.com"
@@ -238,6 +236,7 @@ resource "aws_sns_topic_policy" "build_failure_policy" {
         Resource = aws_sns_topic.build_failure.arn
       },
       {
+        Sid    = "AllowCloudWatchPublish"
         Effect = "Allow"
         Principal = {
           Service = "cloudwatch.amazonaws.com"

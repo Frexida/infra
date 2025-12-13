@@ -52,6 +52,11 @@ resource "aws_codebuild_project" "self_healing" {
     git_clone_depth = 1
     buildspec       = "buildspec.yml"
 
+    auth {
+      type     = "OAUTH"
+      resource = var.github_token
+    }
+
     git_submodules_config {
       fetch_submodules = false
     }
