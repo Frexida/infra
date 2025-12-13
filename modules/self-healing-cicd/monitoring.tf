@@ -55,8 +55,9 @@ resource "aws_cloudwatch_event_target" "lambda_target" {
   arn       = aws_lambda_function.ai_error_handler.arn
 }
 
-# CloudWatch Dashboard
-resource "aws_cloudwatch_dashboard" "pipeline_monitoring" {
+# CloudWatch Dashboard (temporarily disabled due to format issues)
+# TODO: Fix dashboard metrics format
+# resource "aws_cloudwatch_dashboard" "pipeline_monitoring" {
   dashboard_name = "${var.project_name}-monitoring"
 
   dashboard_body = jsonencode({
@@ -151,7 +152,7 @@ resource "aws_cloudwatch_dashboard" "pipeline_monitoring" {
       }
     ]
   })
-}
+# }
 
 # CloudWatch Alarms
 resource "aws_cloudwatch_metric_alarm" "high_failure_rate" {

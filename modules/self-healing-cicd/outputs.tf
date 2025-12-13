@@ -24,13 +24,13 @@ output "sns_topic_arn" {
 }
 
 output "cloudwatch_dashboard_name" {
-  description = "CloudWatch dashboard name"
-  value       = aws_cloudwatch_dashboard.pipeline_monitoring.dashboard_name
+  description = "CloudWatch dashboard name (dashboard temporarily disabled)"
+  value       = "${var.project_name}-monitoring"
 }
 
 output "cloudwatch_dashboard_url" {
-  description = "CloudWatch dashboard URL"
-  value       = "https://console.aws.amazon.com/cloudwatch/home?region=${var.aws_region}#dashboards:name=${aws_cloudwatch_dashboard.pipeline_monitoring.dashboard_name}"
+  description = "CloudWatch dashboard URL (dashboard temporarily disabled)"
+  value       = "Dashboard temporarily disabled - will be created manually"
 }
 
 output "build_cache_bucket" {
