@@ -139,14 +139,14 @@ resource "aws_cloudwatch_dashboard" "pipeline_monitoring" {
         type = "metric"
         properties = {
           metrics = [
-            ["SelfHealingPipeline", "RetryCount", { "stat" = "Sum", "label" = "Total Retries" }],
-            ["SelfHealingPipeline", "AIAgentInvocations", { "stat" = "Sum", "label" = "AI Agent Calls" }],
-            ["SelfHealingPipeline", "PatchSuccessRate", { "stat" = "Average", "label" = "Patch Success Rate (%)" }]
+            ["AWS/CodeBuild", "SuccessfulBuilds", { "stat" = "Sum" }, { "ProjectName" = var.project_name }],
+            [".", "FailedBuilds", { "stat" = "Sum" }, { "ProjectName" = var.project_name }],
+            [".", "Duration", { "stat" = "Average" }, { "ProjectName" = var.project_name }]
           ]
           view   = "singleValue"
           period = 86400 # 1 day
           region = var.aws_region
-          title  = "Daily Statistics"
+          title  = "Build Statistics (24h)"
         }
       }
     ]
