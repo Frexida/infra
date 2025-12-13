@@ -39,9 +39,9 @@ output "build_cache_bucket" {
 }
 
 output "webhook_url" {
-  description = "GitHub webhook URL"
-  value       = aws_codebuild_webhook.github.payload_url
-  sensitive   = true
+  description = "GitHub webhook URL (manually configure in GitHub after deployment)"
+  value       = "Webhook must be manually configured in GitHub after CodeBuild project is created"
+  sensitive   = false
 }
 
 output "webhook_secret" {

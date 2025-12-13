@@ -52,11 +52,6 @@ resource "aws_codebuild_project" "self_healing" {
     git_clone_depth = 1
     buildspec       = "buildspec.yml"
 
-    auth {
-      type     = "OAUTH"
-      resource = var.github_token
-    }
-
     git_submodules_config {
       fetch_submodules = false
     }
@@ -102,23 +97,25 @@ resource "aws_s3_bucket_public_access_block" "build_cache" {
   restrict_public_buckets = true
 }
 
-# GitHub webhook
-resource "aws_codebuild_webhook" "github" {
-  project_name = aws_codebuild_project.self_healing.name
-  build_type   = "BUILD"
-
-  filter_group {
-    filter {
-      type    = "EVENT"
-      pattern = "PUSH"
-    }
-
-    filter {
-      type    = "HEAD_REF"
-      pattern = "^refs/heads/${var.github_branch}$"
-    }
-  }
-}
+# GitHub webhook (commented out - configure manually in GitHub after deployment)
+# Note: Webhook requires GitHub OAuth or Personal Access Token to be configured
+# in AWS CodeBuild console first
+# resource "aws_codebuild_webhook" "github" {
+#   project_name = aws_codebuild_project.self_healing.name
+#   build_type   = "BUILD"
+#
+#   filter_group {
+#     filter {
+#       type    = "EVENT"
+#       pattern = "PUSH"
+#     }
+#
+#     filter {
+#       type    = "HEAD_REF"
+#       pattern = "^refs/heads/${var.github_branch}$"
+#     }
+#   }
+# }
 
 # Secrets Manager for sensitive data (API key is optional)
 resource "aws_secretsmanager_secret" "ai_agent_key" {
