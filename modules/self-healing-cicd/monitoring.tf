@@ -58,100 +58,100 @@ resource "aws_cloudwatch_event_target" "lambda_target" {
 # CloudWatch Dashboard (temporarily disabled due to format issues)
 # TODO: Fix dashboard metrics format
 # resource "aws_cloudwatch_dashboard" "pipeline_monitoring" {
-  dashboard_name = "${var.project_name}-monitoring"
-
-  dashboard_body = jsonencode({
-    widgets = [
-      {
-        type = "metric"
-        properties = {
-          metrics = [
-            ["AWS/CodeBuild", "Builds", { stat = "Sum", label = "Total Builds" }],
-            [".", "SuccessfulBuilds", { stat = "Sum", label = "Successful" }],
-            [".", "FailedBuilds", { stat = "Sum", label = "Failed" }]
-          ]
-          view   = "timeSeries"
-          period = 300
-          stat   = "Sum"
-          region = var.aws_region
-          title  = "Build Status"
-          yAxis = {
-            left = {
-              min = 0
-            }
-          }
-        }
-      },
-      {
-        type = "metric"
-        properties = {
-          metrics = [
-            ["AWS/CodeBuild", "Duration",
-              { stat = "Average", label = "Avg Build Time (min)" },
-              { stat = "Minimum", label = "Min Build Time (min)" },
-              { stat = "Maximum", label = "Max Build Time (min)" }
-            ]
-          ]
-          view   = "timeSeries"
-          period = 300
-          stat   = "Average"
-          region = var.aws_region
-          title  = "Build Duration"
-          yAxis = {
-            left = {
-              label = "Minutes"
-              min   = 0
-            }
-          }
-        }
-      },
-      {
-        type = "metric"
-        properties = {
-          metrics = [
-            ["AWS/Lambda", "Invocations",
-            { stat = "Sum", label = "Lambda Invocations", dimensions = { FunctionName = aws_lambda_function.ai_error_handler.function_name } }],
-            [".", "Errors",
-            { stat = "Sum", label = "Lambda Errors", dimensions = { FunctionName = aws_lambda_function.ai_error_handler.function_name } }],
-            [".", "Duration",
-            { stat = "Average", label = "Avg Duration (ms)", dimensions = { FunctionName = aws_lambda_function.ai_error_handler.function_name } }]
-          ]
-          view   = "timeSeries"
-          period = 300
-          region = var.aws_region
-          title  = "Lambda Metrics"
-        }
-      },
-      {
-        type = "log"
-        properties = {
-          query  = <<-EOT
-            SOURCE '/aws/codebuild/${var.project_name}'
-            | fields @timestamp, @message
-            | filter @message like /ERROR|FAILED/
-            | sort @timestamp desc
-            | limit 20
-          EOT
-          region = var.aws_region
-          title  = "Recent Errors"
-        }
-      },
-      {
-        type = "metric"
-        properties = {
-          metrics = [
-            ["AWS/CodeBuild", "SuccessfulBuilds", { "stat" = "Sum" }, { "ProjectName" = var.project_name }],
-            [".", "FailedBuilds", { "stat" = "Sum" }, { "ProjectName" = var.project_name }],
-            [".", "Duration", { "stat" = "Average" }, { "ProjectName" = var.project_name }]
-          ]
-          view   = "singleValue"
-          period = 86400 # 1 day
-          region = var.aws_region
-          title  = "Build Statistics (24h)"
-        }
-      }
-    ]
-  })
+#   dashboard_name = "${var.project_name}-monitoring"
+#
+#   dashboard_body = jsonencode({
+#     widgets = [
+#       {
+#         type = "metric"
+#         properties = {
+#           metrics = [
+#             ["AWS/CodeBuild", "Builds", { stat = "Sum", label = "Total Builds" }],
+#             [".", "SuccessfulBuilds", { stat = "Sum", label = "Successful" }],
+#             [".", "FailedBuilds", { stat = "Sum", label = "Failed" }]
+#           ]
+#           view   = "timeSeries"
+#           period = 300
+#           stat   = "Sum"
+#           region = var.aws_region
+#           title  = "Build Status"
+#           yAxis = {
+#             left = {
+#               min = 0
+#             }
+#           }
+#         }
+#       },
+#       {
+#         type = "metric"
+#         properties = {
+#           metrics = [
+#             ["AWS/CodeBuild", "Duration",
+#               { stat = "Average", label = "Avg Build Time (min)" },
+#               { stat = "Minimum", label = "Min Build Time (min)" },
+#               { stat = "Maximum", label = "Max Build Time (min)" }
+#             ]
+#           ]
+#           view   = "timeSeries"
+#           period = 300
+#           stat   = "Average"
+#           region = var.aws_region
+#           title  = "Build Duration"
+#           yAxis = {
+#             left = {
+#               label = "Minutes"
+#               min   = 0
+#             }
+#           }
+#         }
+#       },
+#       {
+#         type = "metric"
+#         properties = {
+#           metrics = [
+#             ["AWS/Lambda", "Invocations",
+#             { stat = "Sum", label = "Lambda Invocations", dimensions = { FunctionName = aws_lambda_function.ai_error_handler.function_name } }],
+#             [".", "Errors",
+#             { stat = "Sum", label = "Lambda Errors", dimensions = { FunctionName = aws_lambda_function.ai_error_handler.function_name } }],
+#             [".", "Duration",
+#             { stat = "Average", label = "Avg Duration (ms)", dimensions = { FunctionName = aws_lambda_function.ai_error_handler.function_name } }]
+#           ]
+#           view   = "timeSeries"
+#           period = 300
+#           region = var.aws_region
+#           title  = "Lambda Metrics"
+#         }
+#       },
+#       {
+#         type = "log"
+#         properties = {
+#           query  = <<-EOT
+#             SOURCE '/aws/codebuild/${var.project_name}'
+#             | fields @timestamp, @message
+#             | filter @message like /ERROR|FAILED/
+#             | sort @timestamp desc
+#             | limit 20
+#           EOT
+#           region = var.aws_region
+#           title  = "Recent Errors"
+#         }
+#       },
+#       {
+#         type = "metric"
+#         properties = {
+#           metrics = [
+#             ["AWS/CodeBuild", "SuccessfulBuilds", { "stat" = "Sum" }, { "ProjectName" = var.project_name }],
+#             [".", "FailedBuilds", { "stat" = "Sum" }, { "ProjectName" = var.project_name }],
+#             [".", "Duration", { "stat" = "Average" }, { "ProjectName" = var.project_name }]
+#           ]
+#           view   = "singleValue"
+#           period = 86400 # 1 day
+#           region = var.aws_region
+#           title  = "Build Statistics (24h)"
+#         }
+#       }
+#     ]
+#   })
 # }
 
 # CloudWatch Alarms
